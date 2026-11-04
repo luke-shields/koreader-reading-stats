@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Core tests (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python tests/test_stats.py
+
+  window-linux:
+    name: Window tests (Linux, calibre ${{ matrix.calibre }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        calibre: ["6.0.0", "7.21.0", "latest"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install calibre's system libraries
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libopengl0 libxcb-cursor0 libxkbcommon0 libglx0 libnss3 libfontconfig1
+      - name: Install calibre
+        run: |
+          if [ "${{ matrix.calibre }}" = latest ]; then
+            wget -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sudo sh /dev/stdin
+          else
+            wget -nv -O- https://download.calibre-ebook.com/linux-installer.sh | sudo sh /dev/stdin version=${{ matrix.calibre }}
+          fi
+      - run: calibre-debug tests/test_window.py
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+  window-macos:
+    name: Window tests (macOS, latest calibre)
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install --cask calibre
+      - run: /Applications/calibre.app/Contents/MacOS/calibre-debug "$PWD/tests/test_window.py"
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+  window-windows:
+    name: Window tests (Windows, latest calibre)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: choco install calibre -y --no-progress
+      - run: '& "C:\Program Files\Calibre2\calibre-debug.exe" "$PWD\tests\test_window.py"'
+        env:
+          QT_QPA_PLATFORM: offscreen
+          CALIBRE_DEBUG: C:\Program Files\Calibre2\calibre-debug.exe
+
+  package:
+    name: Build plugin zip
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python tools/build.py
+      - run: python tools/check_release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: koreader-reading-stats-plugin
+          path: dist/KOReader Reading Stats.zip

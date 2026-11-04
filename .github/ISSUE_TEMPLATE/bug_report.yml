@@ -1,0 +1,52 @@
+name: Bug report
+description: Something isn't working
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Please don't attach your statistics database unless you're happy for it to be public, as it lists everything you've read.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: plugin
+    attributes:
+      label: Plugin version
+      placeholder: "1.4.0"
+    validations:
+      required: true
+  - type: input
+    id: calibre
+    attributes:
+      label: calibre version
+      placeholder: "7.21"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Computer
+      options: [macOS, Windows, Linux]
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      placeholder: Kobo Libra H2O
+  - type: checkboxes
+    id: clock
+    attributes:
+      label: Device database
+      options:
+        - label: This involves changing records on a device
+  - type: textarea
+    id: logs
+    attributes:
+      label: Errors or logs
+      description: Error messages, or output from running `calibre-debug -g`.
+      render: text

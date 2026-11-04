@@ -1,0 +1,25 @@
+name: Draft release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  draft:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python tests/test_stats.py
+      - run: python tools/build.py
+      - run: python tools/check_release.py "$GITHUB_REF_NAME"
+      - name: Create a draft release to test before publishing
+        run: gh release create "$GITHUB_REF_NAME" "dist/KOReader Reading Stats.zip" --draft --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
